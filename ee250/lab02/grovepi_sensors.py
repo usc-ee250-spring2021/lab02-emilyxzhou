@@ -23,16 +23,47 @@ sys.path.append('../../Software/Python/')
 sys.path.append('../../Software/Python/grove_rgb_lcd')
 
 import grovepi
+import grove_rgb_lcd
 
-"""This if-statement checks if you are running this python file directly. That 
-is, if you run `python3 grovepi_sensors.py` in terminal, this if-statement will 
-be true"""
+
+ULTRASONIC_PORT = 4  # D4
+POTENTIOMETER_PORT = 0  # A0
+
+
+def poll_sensors():
+    ult_value = round(grovepi.ultrasonicRead(ULTRASONIC_PORT))
+    threshold = round(grovepi.analogRead(POTENTIOMETER_PORT)*517/1023)
+    return ult_value, threshold
+
+
+def update_line_1(threshold, ult_value):
+    line1 = "{}cm".format(threshold)
+
+    if ult_value <= threshold:
+        line1 += " OBJ PRES"
+        grove_rgb_lcd.setRGB(255, 0, 0)
+    else:
+        grove_rgb_lcd.setRGB(0, 255, 0)
+
+    grove_rgb_lcd.setText_norefresh("{}".format(line1))
+
+
+def update_line_2(ult_value):
+    line2 = "{}cm".format(ult_value)
+    grove_rgb_lcd.setText_norefresh("\n{}".format(line2))
+
+        
 if __name__ == '__main__':
-    PORT = 4    # D4
+
+    ult_value, threshold = poll_sensors()
+    update_line_1(threshold, ult_value)
+    update_line_2(ult_value)
 
     while True:
         #So we do not poll the sensors too quickly which may introduce noise,
         #sleep for a reasonable time of 200ms between each iteration.
         time.sleep(0.2)
 
-        print(grovepi.ultrasonicRead(PORT))
+        new_ult_value, new_threshold = poll_sensors()
+        update_line_1(new_threshold, new_ult_value)
+        update_line_2(new_ult_value)
